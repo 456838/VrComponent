@@ -11,6 +11,11 @@ import android.widget.TextView;
 
 import com.asha.vrlib.MDDirectorCamUpdate;
 import com.asha.vrlib.MDVRLibrary;
+import com.asha.vrlib.model.MDHotspotBuilder;
+import com.asha.vrlib.model.MDPosition;
+import com.asha.vrlib.model.MDRay;
+import com.asha.vrlib.plugins.MDWidgetPlugin;
+import com.asha.vrlib.plugins.hotspot.IMDHotspot;
 import com.asha.vrlib.texture.MD360BitmapTexture;
 import com.salton123.base.BaseSupportFragment;
 
@@ -20,9 +25,10 @@ import com.salton123.base.BaseSupportFragment;
  * ModifyTime: 21:41
  * Description:
  */
-public class VrComponent extends BaseSupportFragment {
+public class VrComponent extends BaseSupportFragment implements MDVRLibrary.ITouchPickListener {
     private GLSurfaceView mGlSurfaceView;
     MDVRLibrary mVRLibrary;
+    ViewGroup mRootView;
 
     @Override
     public int GetLayout() {
@@ -46,8 +52,9 @@ public class VrComponent extends BaseSupportFragment {
                         callback.texture(BitmapFactory.decodeResource(getResources(), R.mipmap.star));
                     }
                 }).pinchEnabled(true).build(mGlSurfaceView);
-        ViewGroup rootView = f(R.id.glSurfaceView);
-        rootView.addView(mGlSurfaceView);
+        mRootView = f(R.id.glSurfaceView);
+        mRootView.addView(mGlSurfaceView);
+        addPlugin();
     }
 
     boolean sensorOpen = false;
@@ -150,5 +157,31 @@ public class VrComponent extends BaseSupportFragment {
         mVRLibrary.onDestroy();
     }
 
+    private void addPlugin() {
+        MDPosition position = MDPosition.newInstance().setZ(-10.0f).setYaw(-10.0f).setAngleX(-15);
+        MDHotspotBuilder builder = MDHotspotBuilder.create(new ImageLoadProvider())
+                .size(4f, 4f)
+                .provider(0,_mActivity,android.R.drawable.star_off)
+                .provider(1, _mActivity,android.R.drawable.star_on )
+                .provider(10,  _mActivity, R.mipmap.star_off)
+                .provider(11, _mActivity, R.mipmap.star_on)
+                .listenClick(this)
+                .title("star_off")
+                .position(position)
+                .status(0, 1)
+                .checkedStatus(10, 11);
+        MDWidgetPlugin plugin = new MDWidgetPlugin(builder);
+        mVRLibrary.addPlugin(plugin);
+    }
 
+
+    @Override
+    public void onHotspotHit(IMDHotspot hitHotspot, MDRay ray) {
+        if (hitHotspot instanceof MDWidgetPlugin) {
+            MDWidgetPlugin widgetPlugin = (MDWidgetPlugin) hitHotspot;
+            widgetPlugin.setChecked(!widgetPlugin.getChecked());
+            toast("点我有惊喜哦！");
+            VideoPlayFragment.newInstance().show(getFragmentManager(),"VideoPlayFragment");
+        }
+    }
 }
